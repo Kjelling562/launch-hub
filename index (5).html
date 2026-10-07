@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#111111" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="LV Check" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<title>LV Tracker</title>
+<style>
+  :root {
+    --bg: #f5f5f5;
+    --card: #ffffff;
+    --text: #111111;
+    --muted: #666666;
+    --line: #dddddd;
+    --accent: #111111;
+    --accent-2: #333333;
+    --soft: #f0f0f0;
+    --success: #111111;
+    --shadow: 0 10px 30px rgba(0,0,0,.07);
+    --radius: 18px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: var(--text);
+    background: linear-gradient(180deg, #fafafa 0%, var(--bg) 38%);
+  }
+  button, input, textarea { font: inherit; }
+  html { min-width: 0; }
+  body { min-height: 100svh; overflow-x: hidden; -webkit-text-size-adjust: 100%; }
+  .app { width: min(100%, 760px); margin: 0 auto; padding: max(18px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) calc(46px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+  .topbar { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin:6px 0 18px; }
+  .topbar > div:first-child { min-width: 0; }
+  .eyebrow { font-size:clamp(10px, 2.7vw, 12px); letter-spacing:.09em; text-transform:uppercase; color:var(--accent-2); font-weight:800; }
+  h1 { margin:4px 0 5px; font-size:clamp(29px, 8vw, 34px); line-height:1; letter-spacing:-.04em; }
+  .sub { color:var(--muted); margin:0; font-size:clamp(13px, 3.8vw, 15px); }
+  .ghost-btn { border:1px solid var(--line); background:#fff; color:var(--text); border-radius:999px; padding:10px 13px; cursor:pointer; min-height:44px; white-space:nowrap; touch-action:manipulation; }
+  .hero { background:#111; color:#fff; border-radius:clamp(20px, 5vw, 26px); padding:clamp(16px, 5vw, 20px); box-shadow:var(--shadow); display:grid; gap:16px; }
+  .hero-row { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+  .hero-row > div { min-width: 0; }
+  .hero-row > div:last-child { max-width: 58%; }
+  .score { font-size:clamp(36px, 11vw, 42px); font-weight:850; letter-spacing:-.05em; }
+  .hero small { opacity:.82; }
+  .progress { height:9px; background:rgba(255,255,255,.22); border-radius:999px; overflow:hidden; }
+  .progress > span { display:block; height:100%; width:0; background:#fff; border-radius:999px; transition:width .25s ease; }
+  .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:14px 0; }
+  .stat { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:16px; }
+  .stat b { font-size:22px; display:block; margin-top:4px; }
+  .stat span { color:var(--muted); font-size:13px; }
+  .section-head { display:flex; align-items:end; justify-content:space-between; gap:12px; margin:24px 0 10px; }
+  .section-head h2 { margin:0; font-size:20px; }
+  .section-head p { margin:0; color:var(--muted); font-size:13px; }
+  .timeline { position:relative; padding-left:12px; }
+  .timeline::before { content:""; position:absolute; left:31px; top:18px; bottom:18px; width:2px; background:var(--line); }
+  .item { position:relative; display:grid; grid-template-columns:48px minmax(0,1fr); gap:12px; align-items:start; margin-bottom:12px; }
+  .dot { position:relative; z-index:1; width:38px; height:38px; display:grid; place-items:center; border-radius:50%; border:2px solid #c9d8d2; background:#fff; color:var(--accent); font-weight:900; }
+  .card, .lv-card, .stat { min-width: 0; }
+  .item.done .dot { background:#111; border-color:#111; color:#fff; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:14px; box-shadow:0 4px 12px rgba(0,0,0,.03); }
+  .item.active .card { border-color:#111; box-shadow:0 8px 20px rgba(0,0,0,.10); }
+  .item-top { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .time { font-size:13px; font-weight:800; color:var(--accent-2); }
+  .label { font-size:16px; font-weight:800; margin-top:5px; }
+  .note { color:var(--muted); font-size:13px; margin-top:4px; line-height:1.4; }
+  .actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .btn { border:0; border-radius:12px; padding:10px 12px; min-height:44px; cursor:pointer; font-weight:750; touch-action:manipulation; }
+  .btn.primary { background:var(--accent); color:#fff; }
+  .btn.secondary { background:var(--soft); color:var(--accent); }
+  .btn.done { background:#111; color:#fff; }
+  .lv-card { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:16px; }
+  .lv-grid { display:grid; gap:12px; }
+  .field { display:grid; gap:7px; }
+  label { font-size:13px; font-weight:800; }
+  input, textarea { border:1px solid var(--line); border-radius:12px; padding:11px 12px; background:#fff; color:var(--text); outline:none; }
+  input:focus, textarea:focus { border-color:#111; box-shadow:0 0 0 3px #ededed; }
+  textarea { min-height:92px; resize:vertical; }
+  .save-row { display:flex; justify-content:flex-end; margin-top:10px; }
+  .month-card {
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:16px;
+    box-shadow:0 4px 12px rgba(0,0,0,.03);
+  }
+  .month-summary { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:16px; }
+  .month-count { font-size:34px; font-weight:850; letter-spacing:-.05em; line-height:1; }
+  .month-count-label { color:var(--muted); font-size:13px; margin-top:4px; }
+  .month-progress { flex:1; max-width:220px; }
+  .month-progress-track { height:8px; border-radius:999px; background:#ececec; overflow:hidden; }
+  .month-progress-track span { display:block; height:100%; width:0; background:#111; border-radius:999px; }
+  .month-progress-note { margin-top:6px; color:var(--muted); font-size:12px; text-align:right; }
+  .month-title { font-size:16px; font-weight:800; margin:0 0 10px; }
+  .calendar-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; }
+  .calendar-weekday { color:#888; font-size:10px; font-weight:800; text-align:center; padding-bottom:3px; text-transform:uppercase; letter-spacing:.06em; }
+  .calendar-day { aspect-ratio:1; min-height:32px; display:grid; place-items:center; border:1px solid transparent; border-radius:10px; font-size:12px; color:#777; background:#fafafa; position:relative; }
+  .calendar-day.tracked { background:#111; color:#fff; font-weight:800; }
+  .calendar-day.today { border-color:#111; color:#111; font-weight:800; background:#fff; }
+  .calendar-day.today.tracked { background:#111; color:#fff; }
+  .calendar-day.empty { background:transparent; }
+  .month-legend { display:flex; gap:14px; margin-top:12px; font-size:11px; color:var(--muted); }
+  .legend-item { display:flex; align-items:center; gap:6px; }
+  .legend-dot { width:10px; height:10px; border-radius:3px; border:1px solid #aaa; background:#fff; }
+  .legend-dot.tracked { border-color:#111; background:#111; }
+  @media (max-width:560px) {
+    .month-summary { align-items:flex-start; flex-direction:column; }
+    .month-progress { max-width:none; width:100%; }
+    .month-progress-note { text-align:left; }
+  }
+  dialog { border:0; border-radius:22px; padding:0; max-width:560px; width:calc(100% - 28px); box-shadow:0 28px 70px rgba(0,0,0,.25); }
+  dialog::backdrop { background:rgba(10,30,25,.38); backdrop-filter:blur(3px); }
+  .modal { padding:20px; }
+  .modal h3 { margin:0 0 6px; font-size:22px; }
+  .modal p { color:var(--muted); margin-top:0; }
+  .modal-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:16px; }
+  .toast { position:fixed; left:50%; bottom:20px; transform:translate(-50%, 18px); background:#111; color:#fff; padding:11px 14px; border-radius:999px; opacity:0; pointer-events:none; transition:.22s; font-size:13px; box-shadow:var(--shadow); }
+  .toast.show { opacity:1; transform:translate(-50%,0); }
+  @media (max-width:560px) {
+    .app { padding-top: max(14px, env(safe-area-inset-top)); padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); padding-bottom: calc(34px + env(safe-area-inset-bottom)); }
+    .topbar { align-items:stretch; }
+    .topbar .ghost-btn { align-self:flex-start; }
+    .hero-row { gap:12px; }
+    .hero-row > div:last-child { max-width:52%; }
+    .grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .section-head { align-items:flex-start; }
+    .section-head > div { min-width:0; }
+    .timeline { padding-left:4px; }
+    .timeline::before { left:23px; }
+    .item { grid-template-columns:40px minmax(0,1fr); gap:10px; }
+    .dot { width:36px; height:36px; }
+    .actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .actions .btn { width:100%; }
+    .modal-actions { display:grid; grid-template-columns:1fr; }
+    .modal-actions .btn { width:100%; }
+    input, textarea { font-size:16px; }
+  }
+  @media (max-width:380px) {
+    .topbar { flex-direction:column; }
+    .topbar .ghost-btn { width:100%; }
+    .hero-row { flex-direction:column; align-items:flex-start; }
+    .hero-row > div:last-child { max-width:none; width:100%; text-align:left !important; }
+    .grid { grid-template-columns:1fr; }
+    .actions { grid-template-columns:1fr; }
+    .section-head { flex-direction:column; }
+    .section-head .ghost-btn { width:100%; }
+  }
+  @media (min-width:700px) {
+    .app { padding-left:20px; padding-right:20px; }
+  }
+  @media (orientation:landscape) and (max-height:500px) {
+    .app { padding-top:10px; padding-bottom:20px; }
+    .hero { gap:10px; }
+    .topbar { margin-bottom:12px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">Learning Vitae tracker</div>
+      <h1>LV Check</h1>
+      <p class="sub" id="todayText"></p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+      <button class="ghost-btn" id="openLvBtn">Open LV</button>
+      <button class="ghost-btn" id="calendarBtn">Add calendar reminders</button>
+      <button class="ghost-btn" id="notifyBtn">Enable notifications</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-row">
+      <div>
+        <small>Today's LV progress</small>
+        <div class="score"><span id="doneCount">0</span>/<span id="totalCount">5</span></div>
+      </div>
+      <div style="text-align:right"><small>Keep it moving</small><div id="nextText" style="font-weight:800;margin-top:6px">Next reminder: 11:20</div></div>
+    </div>
+    <div class="progress"><span id="progressBar"></span></div>
+  </section>
+
+  <div class="grid">
+    <div class="stat"><span>Updates added</span><b id="updatesCount">0</b></div>
+    <div class="stat"><span>Current streak</span><b id="streakCount">1 day</b></div>
+  </div>
+
+  <section>
+    <div class="section-head">
+      <div><h2>Fully tracked this month</h2><p id="monthSubtitle">Days where every LV check was completed.</p></div>
+    </div>
+    <div class="month-card">
+      <div class="month-summary">
+        <div>
+          <div class="month-count"><span id="monthTrackedCount">0</span>/<span id="monthDaysCount">31</span></div>
+          <div class="month-count-label">fully tracked days</div>
+        </div>
+        <div class="month-progress">
+          <div class="month-progress-track"><span id="monthProgressBar"></span></div>
+          <div class="month-progress-note" id="monthProgressNote">0% of the month tracked</div>
+        </div>
+      </div>
+      <div class="month-title" id="monthTitle">October 2026</div>
+      <div id="monthCalendar" class="calendar-grid"></div>
+      <div class="month-legend">
+        <div class="legend-item"><span class="legend-dot tracked"></span> Fully tracked</div>
+        <div class="legend-item"><span class="legend-dot"></span> Not fully tracked</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <div><h2>Today's reminders</h2><p>Tap complete when you've checked your LV.</p></div>
+    </div>
+    <div class="timeline" id="timeline"></div>
+  </section>
+
+</div>
+
+
+<div class="toast" id="toast"></div>
+
+<script>
+const LEARNING_VITAE_URL = 'https://vitae.learnlife.com/learners/240';
+
+const defaultReminders = [
+  { id:'1120', time:'11:20', title:'Check & update your LV', note:'Open your LV and add the specific thing you want to remember from the morning.', icon:'✓' },
+  { id:'1300', time:'13:00', title:'Quick LV check', note:'Add one learning point, skill, or achievement.', icon:'1' },
+  { id:'1510', time:'15:10', title:'Update your progress', note:'Capture anything useful you learned since lunch.', icon:'2' },
+  { id:'1700', time:'17:00', title:'Final update', note:'Add the last important learning point before the day ends.', icon:'3' },
+  { id:'eod', time:'End of day', title:'Daily check', note:'Make sure today’s best learning is saved in your LV.', icon:'✓' }
+];
+
+const state = JSON.parse(localStorage.getItem('lvTrackerState') || 'null') || {
+  reminders: {},
+  updates: 0,
+  streak: 1,
+  lastDate: new Date().toDateString(),
+  history: {},
+};
+state.history = state.history || {};
+
+const $ = (s) => document.querySelector(s);
+
+function dateKey(date = new Date()) { return date.toDateString(); }
+function isDayFullyTracked(reminders) {
+  return defaultReminders.every(r => reminders[r.id]);
+}
+function recordFullyTrackedDay(key, reminders) {
+  if (isDayFullyTracked(reminders)) state.history[key] = true;
+}
+function resetForNewDay() {
+  if (state.lastDate !== dateKey()) {
+    recordFullyTrackedDay(state.lastDate, state.reminders || {});
+    state.reminders = {};
+    state.lastDate = dateKey();
+    state.streak = Math.max(1, Number(state.streak || 1) + 1);
+    save();
+  }
+}
+function save() { localStorage.setItem('lvTrackerState', JSON.stringify(state)); }
+function fmtDate() { return new Intl.DateTimeFormat(undefined, {weekday:'long', month:'long', day:'numeric'}).format(new Date()); }
+function showToast(msg) { const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(window.__toast); window.__toast=setTimeout(()=>t.classList.remove('show'),2200); }
+function renderMonthly() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const monthName = new Intl.DateTimeFormat(undefined, {month:'long', year:'numeric'}).format(now);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(year, month, 1).getDay();
+  const mondayOffset = (firstDay + 6) % 7;
+  if (state.lastDate === dateKey() && isDayFullyTracked(state.reminders) && !state.history[dateKey()]) {
+    state.history[dateKey()] = true;
+    save();
+  }
+  let tracked = 0;
+  for (let day = 1; day <= daysInMonth; day++) {
+    const key = dateKey(new Date(year, month, day));
+    if (state.history[key]) tracked++;
+  }
+  const pct = Math.round((tracked / daysInMonth) * 100);
+  $('#monthTitle').textContent = monthName;
+  $('#monthTrackedCount').textContent = tracked;
+  $('#monthDaysCount').textContent = daysInMonth;
+  $('#monthProgressBar').style.width = `${pct}%`;
+  $('#monthProgressNote').textContent = `${pct}% of the month tracked`;
+
+  const weekdays = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  let html = weekdays.map(d => `<div class="calendar-weekday">${d}</div>`).join('');
+  for (let i = 0; i < mondayOffset; i++) html += '<div class="calendar-day empty"></div>';
+  for (let day = 1; day <= daysInMonth; day++) {
+    const key = dateKey(new Date(year, month, day));
+    const trackedDay = !!state.history[key];
+    const isToday = day === now.getDate();
+    html += `<div class="calendar-day ${trackedDay?'tracked':''} ${isToday?'today':''}" aria-label="${monthName} ${day}${trackedDay?', fully tracked':''}">${day}</div>`;
+  }
+  $('#monthCalendar').innerHTML = html;
+}
+
+function render() {
+  resetForNewDay();
+  if (isDayFullyTracked(state.reminders)) recordFullyTrackedDay(dateKey(), state.reminders);
+
+  $('#todayText').textContent = fmtDate();
+  const done = defaultReminders.filter(r => state.reminders[r.id]).length;
+  $('#doneCount').textContent = done;
+  $('#totalCount').textContent = defaultReminders.length;
+  $('#updatesCount').textContent = state.updates;
+  $('#streakCount').textContent = `${state.streak} ${state.streak === 1 ? 'day' : 'days'}`;
+  $('#progressBar').style.width = `${Math.round(done/defaultReminders.length*100)}%`;
+  renderMonthly();
+
+  const now = new Date();
+  let next = 'All reminders done — nice work!';
+  const nextReminder = defaultReminders.find(r => !state.reminders[r.id] && r.time !== 'End of day' && timeToMinutes(r.time) >= now.getHours()*60+now.getMinutes());
+  if (nextReminder) next = `Next reminder: ${nextReminder.time}`;
+  $('#nextText').textContent = next;
+
+  $('#timeline').innerHTML = defaultReminders.map((r, i) => {
+    const completed = !!state.reminders[r.id];
+    const active = !completed && ((r.time !== 'End of day' && timeToMinutes(r.time) <= now.getHours()*60+now.getMinutes()) || (r.id==='eod' && now.getHours() >= 17));
+    return `<div class="item ${completed?'done':''} ${active?'active':''}">
+      <div class="dot">${completed?'✓':r.icon}</div>
+      <div class="card">
+        <div class="item-top"><div class="time">${r.time}</div><span style="font-size:12px;color:var(--muted)">${completed?'Done':'Reminder'}</span></div>
+        <div class="label">${r.title}</div>
+        <div class="note">${r.note}</div>
+        <div class="actions">
+          ${completed ? `<button class="btn done" data-action="undo" data-id="${r.id}">Completed ✓</button>` : `<button class="btn primary" data-action="complete" data-id="${r.id}">Mark complete</button>`}
+          <button class="btn secondary" data-action="open" data-id="${r.id}">Open LV</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function timeToMinutes(t) { const [h,m] = t.split(':').map(Number); return h*60+m; }
+
+$('#timeline').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-action]'); if (!btn) return;
+  const id = btn.dataset.id;
+  if (btn.dataset.action === 'complete') {
+    state.reminders[id] = true; state.updates += 1; save(); render(); showToast('Nice — reminder marked complete.');
+  } else if (btn.dataset.action === 'undo') {
+    delete state.reminders[id]; state.updates = Math.max(0, state.updates-1); save(); render();
+  } else if (btn.dataset.action === 'open') {
+    window.open(LEARNING_VITAE_URL, '_blank', 'noopener,noreferrer');
+  }
+});
+
+$('#openLvBtn').addEventListener('click', () => {
+  window.open(LEARNING_VITAE_URL, '_blank', 'noopener,noreferrer');
+});
+
+$('#notifyBtn').addEventListener('click', async () => {
+  if (!('Notification' in window)) { showToast('This browser does not support notifications.'); return; }
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      showToast('Notifications are enabled on this device.');
+      try { new Notification('LV Check', {body:'Your LV reminders are ready.'}); } catch {}
+      $('#notifyBtn').textContent = 'Notifications on';
+    } else {
+      showToast('Notifications were not enabled.');
+    }
+  } catch {
+    showToast('Could not enable notifications here.');
+  }
+});
+
+function downloadCalendarReminders() {
+  const events = [
+    ['11:20','Check & update your LV','Open your LV and add the specific thing you want to remember from the morning.'],
+    ['13:00','Quick LV check','Add one learning point, skill, or achievement.'],
+    ['15:10','Update your progress','Capture anything useful you learned since lunch.'],
+    ['17:00','Final update','Add the last important learning point before the day ends.'],
+    ['17:30','Daily LV check','Make sure today\'s best learning is saved in your LV.']
+  ];
+  const esc = (value) => value.replace(/([\,;])/g, '\\$1').replace(/\r?\n/g, '\\n');
+  const stamp = new Date();
+  const dtstamp = stamp.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+  const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//LV Check//Learning Vitae reminders//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+  const day = new Date();
+  const y = day.getFullYear();
+  const m = String(day.getMonth()+1).padStart(2,'0');
+  const d = String(day.getDate()).padStart(2,'0');
+  events.forEach(([time,title,desc], index) => {
+    const [hh,mm] = time.split(':');
+    const start = `${y}${m}${d}T${hh}${mm}00`;
+    lines.push('BEGIN:VEVENT');
+    lines.push(`UID:lv-check-${index}@lvtracker`);
+    lines.push(`DTSTAMP:${dtstamp}`);
+    lines.push(`DTSTART:${start}`);
+    lines.push('RRULE:FREQ=DAILY');
+    lines.push(`SUMMARY:${esc(title)}`);
+    lines.push(`DESCRIPTION:${esc(desc)}`);
+    lines.push('BEGIN:VALARM');
+    lines.push('TRIGGER:-PT0S');
+    lines.push('ACTION:DISPLAY');
+    lines.push(`DESCRIPTION:${esc(title)}`);
+    lines.push('END:VALARM');
+    lines.push('END:VEVENT');
+  });
+  lines.push('END:VCALENDAR');
+  const blob = new Blob([lines.join('\r\n')], {type:'text/calendar;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'LV-Check-reminders.ics';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast('Calendar reminders downloaded. Add the file to your calendar.');
+}
+
+$('#calendarBtn').addEventListener('click', downloadCalendarReminders);
+
+function maybeNotify() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const now = new Date();
+  const minute = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  defaultReminders.forEach(r => {
+    if (r.time === minute && !state.reminders[r.id]) {
+      const key = `${dateKey()}-${r.id}`;
+      if (localStorage.getItem('lvLastNotice') !== key) {
+        try { new Notification(r.title, {body:r.note}); } catch {}
+        localStorage.setItem('lvLastNotice', key);
+      }
+    }
+  });
+}
+
+render();
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+if ('Notification' in window && Notification.permission === 'granted') $('#notifyBtn').textContent = 'Notifications on';
+setInterval(() => { render(); maybeNotify(); }, 15000);
+</script>
+</body>
+</html>
